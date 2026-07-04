@@ -59,12 +59,20 @@
   label.fld > span{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:7px;font-weight:600}
 
   input[type=text],input[type=date],select,textarea{
-    width:100%;font:inherit;font-size:15px;color:var(--ink);
+    width:100%;max-width:100%;font:inherit;font-size:16px;color:var(--ink);
     background:#fff;border:1.5px solid var(--line);border-radius:12px;
     padding:11px 12px;outline:none;transition:border-color .15s;
+    -webkit-appearance:none;appearance:none;min-width:0;
   }
   input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   textarea{resize:none;min-height:52px}
+  /* iOS 日期控件适配:去掉原生撑宽、左对齐、不溢出 */
+  input[type=date]{
+    min-height:46px;display:block;text-align:left;line-height:1.2;
+  }
+  input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+  input[type=date]::-webkit-datetime-edit{padding:0;line-height:1.2}
+  input[type=date]::-webkit-calendar-picker-indicator{margin-left:auto}
 
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{
