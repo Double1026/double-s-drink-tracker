@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="今天喝了啥">
+<title>Double今天喝了啥</title>
+<style>
+  :root{
+    --bg:#f7f1e8;
+    --card:#fffdf9;
+    --ink:#3a2e26;
+    --ink-soft:#8a7a6b;
+    --line:#ece2d4;
+    --accent:#c9783c;      /* 奶茶焦糖 */
+    --accent-soft:#f4dcc6;
+    --good:#3f9d6d;
+    --bad:#d05a5a;
+    --star:#f0b429;
+    --shadow:0 6px 24px rgba(122,92,60,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding-bottom:78px;
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+  }
+  .app-head{
+    padding:22px 20px 8px;
+    text-align:center;
+  }
+  .app-head h1{
+    font-size:22px;margin:0;font-weight:800;letter-spacing:.5px;
+  }
+  .app-head h1 .cup{font-size:24px}
+  .app-head p{margin:4px 0 0;color:var(--ink-soft);font-size:12.5px}
+
+  .view{display:none;padding:6px 16px 20px;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:var(--shadow);
+    margin-bottom:14px;
+  }
+  .card h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:6px}
+
+  label.fld{display:block;margin-bottom:14px}
+  label.fld > span{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:7px;font-weight:600}
+
+  input[type=text],input[type=date],select,textarea{
+    width:100%;font:inherit;font-size:15px;color:var(--ink);
+    background:#fff;border:1.5px solid var(--line);border-radius:12px;
+    padding:11px 12px;outline:none;transition:border-color .15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:none;min-height:52px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);
+    background:#fff;font-size:13.5px;color:var(--ink);cursor:pointer;
+    transition:all .12s;user-select:none;
+  }
+  .chip:active{transform:scale(.95)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  .stars{display:flex;gap:6px}
+  .stars .s{font-size:32px;cursor:pointer;color:#e2d8ca;transition:transform .1s}
+  .stars .s.on{color:var(--star)}
+  .stars .s:active{transform:scale(1.2)}
+
+  .btn{
+    width:100%;border:none;border-radius:14px;padding:15px;
+    font:inherit;font-size:16px;font-weight:700;color:#fff;
+    background:var(--accent);cursor:pointer;box-shadow:0 4px 14px rgba(201,120,60,.35);
+    transition:transform .1s,opacity .15s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent-soft);box-shadow:none}
+
+  .toast{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;
+    font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:50;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* nav */
+  .nav{
+    position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;
+    background:rgba(255,253,249,.94);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);display:flex;padding:6px 8px 10px;
+  }
+  .nav button{
+    flex:1;background:none;border:none;padding:6px 0;cursor:pointer;
+    color:var(--ink-soft);font:inherit;font-size:11px;display:flex;
+    flex-direction:column;align-items:center;gap:3px;transition:color .15s;
+  }
+  .nav button .ic{font-size:21px;line-height:1}
+  .nav button.on{color:var(--accent);font-weight:700}
+
+  /* records list */
+  .rec{
+    display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);
+  }
+  .rec:last-child{border-bottom:none}
+  .rec .ava{
+    width:42px;height:42px;border-radius:12px;background:var(--accent-soft);
+    display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+  }
+  .rec .info{flex:1;min-width:0}
+  .rec .info .name{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rec .info .meta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .rec .rstar{color:var(--star);font-size:13px;flex-shrink:0}
+  .rec .del{color:var(--ink-soft);font-size:18px;padding:4px 6px;cursor:pointer;flex-shrink:0}
+
+  .empty{text-align:center;color:var(--ink-soft);padding:34px 10px;font-size:14px}
+  .empty .big{font-size:38px;display:block;margin-bottom:8px}
+
+  /* rankings */
+  .seg{display:flex;background:#efe6d8;border-radius:12px;padding:4px;margin-bottom:14px}
+  .seg button{
+    flex:1;border:none;background:none;padding:9px 4px;border-radius:9px;
+    font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:all .15s;
+  }
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+  .catbar{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch}
+  .catbar::-webkit-scrollbar{display:none}
+  .catbar .chip{flex-shrink:0;padding:6px 13px;font-size:12.5px}
+
+  .toprow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .toprow:last-child{border-bottom:none}
+  .rank{width:26px;text-align:center;font-weight:800;font-size:16px;color:var(--ink-soft);flex-shrink:0}
+  .rank.top1{color:#e5a300}.rank.top2{color:#b9b2a6}.rank.top3{color:#cd8a52}
+  .toprow .tinfo{flex:1;min-width:0}
+  .toprow .tinfo .tn{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toprow .tinfo .ts{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .toprow .val{font-weight:800;font-size:15px;flex-shrink:0}
+  .val.good{color:var(--good)}.val.bad{color:var(--bad)}.val.hot{color:var(--accent)}
+
+  /* calendar */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .calhead .mtitle{font-size:17px;font-weight:800}
+  .calhead .navb{background:var(--accent-soft);border:none;width:34px;height:34px;border-radius:10px;font-size:18px;color:var(--accent);cursor:pointer}
+  .stats{display:flex;gap:12px;margin-bottom:14px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center;box-shadow:var(--shadow)}
+  .stat .num{font-size:26px;font-weight:800;color:var(--accent)}
+  .stat .lab{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .wk{text-align:center;font-size:11px;color:var(--ink-soft);padding-bottom:4px;font-weight:600}
+  .day{
+    aspect-ratio:1;border-radius:11px;background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:13px;position:relative;cursor:pointer;
+  }
+  .day.blank{background:transparent;border:none;cursor:default}
+  .day.today{border-color:var(--accent);border-width:2px}
+  .day.has{background:var(--accent-soft);font-weight:700}
+  .day .cnt{position:absolute;top:2px;right:4px;font-size:9px;color:var(--accent);font-weight:800}
+  .day .dots{display:flex;gap:2px;margin-top:2px}
+  .day .dot{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+
+  /* day detail modal */
+  .modal{position:fixed;inset:0;background:rgba(58,46,38,.45);display:none;align-items:flex-end;z-index:60}
+  .modal.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:520px;margin:0 auto;border-radius:22px 22px 0 0;padding:20px 18px 28px;max-height:70vh;overflow:auto;animation:up .25s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h3{margin:0 0 12px;font-size:16px}
+  .sheet .close{position:absolute}
+</style>
+</head>
+<body>
+
+<div class="app-head">
+  <h1><span class="cup">🧋</span> Double今天喝了啥</h1>
+  <p>记录每一杯,喝出好喝榜与踩雷榜</p>
+</div>
+
+<!-- ============ 记录 ============ -->
+<section id="v-record" class="view active">
+  <div class="card">
+    <h2>📝 今天喝了啥</h2>
+    <label class="fld">
+      <span>日期</span>
+      <input type="date" id="f-date">
+    </label>
+    <label class="fld">
+      <span>品牌</span>
+      <select id="f-brand"></select>
+    </label>
+    <label class="fld" id="brand-custom-wrap" style="display:none">
+      <span>自定义品牌</span>
+      <input type="text" id="f-brand-custom" placeholder="输入品牌名">
+    </label>
+    <label class="fld">
+      <span>饮品名称(选填,用于单品榜)</span>
+      <input type="text" id="f-name" placeholder="如:多肉葡萄、生椰拿铁…">
+    </label>
+    <label class="fld">
+      <span>品类</span>
+      <div class="chips" id="f-cat"></div>
+    </label>
+    <label class="fld">
+      <span>冰量</span>
+      <div class="chips" id="f-ice"></div>
+    </label>
+    <label class="fld">
+      <span>甜度</span>
+      <div class="chips" id="f-sweet"></div>
+    </label>
+    <label class="fld">
+      <span>打分</span>
+      <div class="stars" id="f-stars">
+        <span class="s" data-v="1">★</span><span class="s" data-v="2">★</span>
+        <span class="s" data-v="3">★</span><span class="s" data-v="4">★</span>
+        <span class="s" data-v="5">★</span>
+      </div>
+    </label>
+    <label class="fld">
+      <span>备注(选填)</span>
+      <textarea id="f-note" placeholder="口感、心情、想复购吗…"></textarea>
+    </label>
+    <button class="btn" id="btn-save">保存这一杯</button>
+  </div>
+
+  <div class="card">
+    <h2>🕐 最近记录</h2>
+    <div id="recent-list"></div>
+  </div>
+</section>
+
+<!-- ============ 榜单 ============ -->
+<section id="v-rank" class="view">
+  <div class="seg" id="rank-seg">
+    <button data-r="hot" class="on">🔥 热度榜</button>
+    <button data-r="good">😋 好喝榜</button>
+    <button data-r="bad">😖 踩雷榜</button>
+  </div>
+  <div class="catbar" id="rank-cat"></div>
+  <div class="seg" id="rank-topn" style="max-width:200px;margin:0 auto 14px">
+    <button data-n="10" class="on">TOP 10</button>
+    <button data-n="20">TOP 20</button>
+  </div>
+  <div class="card">
+    <h2 id="rank-title">🔥 单品热度 TOP10</h2>
+    <div id="rank-list"></div>
+  </div>
+</section>
+
+<!-- ============ 日历 ============ -->
+<section id="v-cal" class="view">
+  <div class="stats">
+    <div class="stat"><div class="num" id="stat-month">0</div><div class="lab">本月杯数</div></div>
+    <div class="stat"><div class="num" id="stat-year">0</div><div class="lab">本年杯数</div></div>
+    <div class="stat"><div class="num" id="stat-total">0</div><div class="lab">累计杯数</div></div>
+  </div>
+  <div class="card">
+    <div class="calhead">
+      <button class="navb" id="cal-prev">‹</button>
+      <div class="mtitle" id="cal-title">2026年7月</div>
+      <button class="navb" id="cal-next">›</button>
+    </div>
+    <div class="grid" id="cal-week">
+      <div class="wk">日</div><div class="wk">一</div><div class="wk">二</div><div class="wk">三</div><div class="wk">四</div><div class="wk">五</div><div class="wk">六</div>
+    </div>
+    <div class="grid" id="cal-grid" style="margin-top:5px"></div>
+  </div>
+</section>
+
+<!-- nav -->
+<nav class="nav">
+  <button data-v="record" class="on"><span class="ic">📝</span>记录</button>
+  <button data-v="rank"><span class="ic">🏆</span>榜单</button>
+  <button data-v="cal"><span class="ic">📅</span>日历</button>
+</nav>
+
+<!-- day detail -->
+<div class="modal" id="day-modal">
+  <div class="sheet">
+    <h3 id="day-title">7月4日</h3>
+    <div id="day-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 数据配置 ---------- */
+const BRANDS = ["喜茶","奈雪的茶","蜜雪冰城","霸王茶姬","茶百道","古茗","沪上阿姨","书亦烧仙草","CoCo","一点点","益禾堂","茶颜悦色","瑞幸咖啡","星巴克","库迪","M Stand","其他/自定义"];
+const CATS   = ["奶茶","果茶","咖啡","纯茶","乳茶","气泡/汽水","酸奶","其他"];
+const ICES   = ["正常冰","少冰","去冰","常温","温","热"];
+const SWEETS = ["全糖","七分糖","五分糖","三分糖","无糖"];
+const CAT_ICON = {"奶茶":"🧋","果茶":"🍓","咖啡":"☕","纯茶":"🍵","乳茶":"🥛","气泡/汽水":"🥤","酸奶":"🍶","其他":"🧊"};
+
+/* ---------- 存储 ---------- */
+const KEY = "double_drinks_v1";
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return []} }
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+let data = load();
+
+/* ---------- 工具 ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1600); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function starStr(n){ return "★★★★★".slice(0,n)+"☆☆☆☆☆".slice(0,5-n); }
+function itemName(r){ return r.name ? r.name : (r.brand + (r.cat?(" · "+r.cat):"")); }
+function itemKey(r){ return r.name ? (r.brand+"|"+r.name) : (r.brand+"|#"+r.cat); }
+
+/* ---------- 表单状态 ---------- */
+let form = { cat:null, ice:"正常冰", sweet:"五分糖", rating:0 };
+
+function buildForm(){
+  // 日期
+  $("#f-date").value = todayStr();
+  // 品牌
+  const bs=$("#f-brand"); bs.innerHTML="";
+  BRANDS.forEach(b=>{ const o=document.createElement("option"); o.value=b; o.textContent=b; bs.appendChild(o); });
+  bs.onchange=()=>{ $("#brand-custom-wrap").style.display = bs.value==="其他/自定义" ? "block":"none"; };
+  // chips
+  chipGroup("#f-cat", CATS, "cat");
+  chipGroup("#f-ice", ICES, "ice", "正常冰");
+  chipGroup("#f-sweet", SWEETS, "sweet", "五分糖");
+  // stars
+  $$("#f-stars .s").forEach(s=>{
+    s.onclick=()=>{ form.rating=+s.dataset.v; paintStars(); };
+  });
+}
+function chipGroup(sel, arr, field, def){
+  const wrap=$(sel); wrap.innerHTML="";
+  arr.forEach(v=>{
+    const c=document.createElement("div"); c.className="chip"; c.textContent=v;
+    if(def && v===def){ c.classList.add("on"); form[field]=v; }
+    c.onclick=()=>{ wrap.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on"); form[field]=v; };
+    wrap.appendChild(c);
+  });
+}
+function paintStars(){ $$("#f-stars .s").forEach(s=> s.classList.toggle("on", +s.dataset.v<=form.rating)); }
+
+/* ---------- 保存 ---------- */
+$("#btn-save").onclick=()=>{
+  let brand=$("#f-brand").value;
+  if(brand==="其他/自定义"){ brand=$("#f-brand-custom").value.trim(); if(!brand){toast("请填写品牌名");return;} }
+  if(!form.cat){ toast("选一下品类吧"); return; }
+  if(!form.rating){ toast("给它打个分吧⭐"); return; }
+  const rec={
+    id:Date.now()+"_"+Math.random().toString(36).slice(2,6),
+    date:$("#f-date").value||todayStr(),
+    brand, name:$("#f-name").value.trim(),
+    cat:form.cat, ice:form.ice, sweet:form.sweet,
+    rating:form.rating, note:$("#f-note").value.trim()
+  };
+  data.push(rec); save(data);
+  toast("已记录 🎉");
+  // reset partial
+  $("#f-name").value=""; $("#f-note").value=""; form.rating=0; paintStars();
+  renderRecent(); renderCal();
+};
+
+/* ---------- 最近记录 ---------- */
+function renderRecent(){
+  const box=$("#recent-list");
+  const list=[...data].sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0,8);
+  if(!list.length){ box.innerHTML='<div class="empty"><span class="big">🥤</span>还没有记录,喝了就记一笔吧</div>'; return; }
+  box.innerHTML="";
+  list.forEach(r=>{
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=`<div class="ava">${CAT_ICON[r.cat]||"🥤"}</div>
+      <div class="info">
+        <div class="name">${esc(itemName(r))}</div>
+        <div class="meta">${r.date.slice(5)} · ${r.ice} · ${r.sweet}${r.brand&&r.name?(" · "+esc(r.brand)):""}</div>
+      </div>
+      <div class="rstar">${"★".repeat(r.rating)}</div>
+      <div class="del" data-id="${r.id}">✕</div>`;
+    el.querySelector(".del").onclick=()=>{ if(confirm("删除这条记录?")){ data=data.filter(x=>x.id!==r.id); save(data); renderRecent(); renderCal(); } };
+    box.appendChild(el);
+  });
+}
+function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---------- 榜单 ---------- */
+let rankState = { type:"hot", cat:"全部", n:10 };
+function buildRankCat(){
+  const wrap=$("#rank-cat"); wrap.innerHTML="";
+  ["全部",...CATS].forEach(c=>{
+    const chip=document.createElement("div"); chip.className="chip"+(c===rankState.cat?" on":""); chip.textContent=c;
+    chip.onclick=()=>{ rankState.cat=c; buildRankCat(); renderRank(); };
+    wrap.appendChild(chip);
+  });
+}
+function renderRank(){
+  // segments highlight
+  $$("#rank-seg button").forEach(b=> b.classList.toggle("on", b.dataset.r===rankState.type));
+  $$("#rank-topn button").forEach(b=> b.classList.toggle("on", +b.dataset.n===rankState.n));
+
+  let recs = data;
+  if(rankState.cat!=="全部") recs = recs.filter(r=>r.cat===rankState.cat);
+
+  // 按单品聚合
+  const map={};
+  recs.forEach(r=>{
+    const k=itemKey(r);
+    if(!map[k]) map[k]={name:itemName(r), cat:r.cat, brand:r.brand, count:0, sum:0};
+    map[k].count++; map[k].sum+=r.rating;
+  });
+  let arr=Object.values(map).map(x=>({...x, avg:x.sum/x.count}));
+
+  const titles={hot:"🔥 单品热度",good:"😋 好喝榜",bad:"😖 踩雷榜"};
+  $("#rank-title").textContent = `${titles[rankState.type]} TOP${rankState.n}` + (rankState.cat!=="全部"?` · ${rankState.cat}`:"");
+
+  if(rankState.type==="hot"){
+    arr.sort((a,b)=> b.count-a.count || b.avg-a.avg);
+  }else if(rankState.type==="good"){
+    arr.sort((a,b)=> b.avg-a.avg || b.count-a.count);
+  }else{
+    arr.sort((a,b)=> a.avg-b.avg || b.count-a.count);
+  }
+  arr=arr.slice(0, rankState.n);
+
+  const box=$("#rank-list");
+  if(!arr.length){ box.innerHTML='<div class="empty"><span class="big">📊</span>这个分类还没有数据</div>'; return; }
+  box.innerHTML="";
+  arr.forEach((x,i)=>{
+    const rank=i+1;
+    let val,cls;
+    if(rankState.type==="hot"){ val=x.count+"杯"; cls="hot"; }
+    else if(rankState.type==="good"){ val=x.avg.toFixed(1)+"★"; cls="good"; }
+    else{ val=x.avg.toFixed(1)+"★"; cls="bad"; }
+    const el=document.createElement("div"); el.className="toprow";
+    el.innerHTML=`<div class="rank ${rank<=3?"top"+rank:""}">${rank<=3?["🥇","🥈","🥉"][rank-1]:rank}</div>
+      <div class="tinfo">
+        <div class="tn">${CAT_ICON[x.cat]||"🥤"} ${esc(x.name)}</div>
+        <div class="ts">${esc(x.cat)} · 记录${x.count}次 · 均分${x.avg.toFixed(1)}</div>
+      </div>
+      <div class="val ${cls}">${val}</div>`;
+    box.appendChild(el);
+  });
+}
+$$("#rank-seg button").forEach(b=> b.onclick=()=>{ rankState.type=b.dataset.r; renderRank(); });
+$$("#rank-topn button").forEach(b=> b.onclick=()=>{ rankState.n=+b.dataset.n; renderRank(); });
+
+/* ---------- 日历 ---------- */
+let calY, calM; // 当前显示的年、月(0-based month)
+function initCal(){ const d=new Date(); calY=d.getFullYear(); calM=d.getMonth(); }
+function renderCal(){
+  const first=new Date(calY,calM,1);
+  const startWk=first.getDay();
+  const days=new Date(calY,calM+1,0).getDate();
+  $("#cal-title").textContent=`${calY}年${calM+1}月`;
+
+  // 按天聚合
+  const byDay={};
+  data.forEach(r=>{ (byDay[r.date]=byDay[r.date]||[]).push(r); });
+
+  const grid=$("#cal-grid"); grid.innerHTML="";
+  for(let i=0;i<startWk;i++){ const b=document.createElement("div"); b.className="day blank"; grid.appendChild(b); }
+  const t=todayStr();
+  for(let d=1;d<=days;d++){
+    const ds=`${calY}-${String(calM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const recs=byDay[ds]||[];
+    const cell=document.createElement("div");
+    cell.className="day"+(recs.length?" has":"")+(ds===t?" today":"");
+    let dots="";
+    if(recs.length){ const n=Math.min(recs.length,3); dots='<div class="dots">'+'<span class="dot"></span>'.repeat(n)+'</div>'; }
+    cell.innerHTML=`${recs.length?`<span class="cnt">${recs.length}</span>`:""}<span>${d}</span>${dots}`;
+    if(recs.length) cell.onclick=()=>openDay(ds,recs);
+    grid.appendChild(cell);
+  }
+
+  // 统计
+  const monthCnt=data.filter(r=>r.date.startsWith(`${calY}-${String(calM+1).padStart(2,"0")}`)).length;
+  const yearCnt=data.filter(r=>r.date.startsWith(`${calY}-`)).length;
+  $("#stat-month").textContent=monthCnt;
+  $("#stat-year").textContent=yearCnt;
+  $("#stat-total").textContent=data.length;
+}
+$("#cal-prev").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); };
+$("#cal-next").onclick=()=>{ calM++; if(calM>11){calM=0;calY++;} renderCal(); };
+
+function openDay(ds,recs){
+  const [y,m,d]=ds.split("-");
+  $("#day-title").textContent=`${+m}月${+d}日 · 共${recs.length}杯`;
+  const box=$("#day-list"); box.innerHTML="";
+  recs.forEach(r=>{
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=`<div class="ava">${CAT_ICON[r.cat]||"🥤"}</div>
+      <div class="info"><div class="name">${esc(itemName(r))}</div>
+      <div class="meta">${esc(r.brand)} · ${r.ice} · ${r.sweet}${r.note?(" · "+esc(r.note)):""}</div></div>
+      <div class="rstar">${"★".repeat(r.rating)}</div>`;
+    box.appendChild(el);
+  });
+  $("#day-modal").classList.add("show");
+}
+$("#day-modal").onclick=(e)=>{ if(e.target.id==="day-modal") e.target.classList.remove("show"); };
+
+/* ---------- 导航 ---------- */
+$$(".nav button").forEach(b=> b.onclick=()=>{
+  const v=b.dataset.v;
+  $$(".nav button").forEach(x=>x.classList.toggle("on",x===b));
+  $$(".view").forEach(x=>x.classList.remove("active"));
+  $("#v-"+v).classList.add("active");
+  if(v==="rank") renderRank();
+  if(v==="cal") renderCal();
+  window.scrollTo(0,0);
+});
+
+/* ---------- 启动 ---------- */
+buildForm(); renderRecent(); buildRankCat(); initCal(); renderCal();
+</script>
+</body>
+</html>
